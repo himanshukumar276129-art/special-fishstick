@@ -22,7 +22,6 @@ dependencies = [
     "replicate",
     "emoji",
     "stability-sdk",
-    "yfinance",
     "google-search-results",
     "python-dateutil",
     "cryptography",

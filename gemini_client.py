@@ -8,7 +8,7 @@ class GeminiClient:
         genai.configure(api_key=api_key)
         
         self.model = None
-        self._configure_model()
+        # Lazy initialization: _configure_model() will be called when needed in get_full_response
 
     def _configure_model(self):
         """Dynamically find a working model availability."""

@@ -215,75 +215,23 @@ else:
 # Initialize AI Assistants - 7 Tier Fallback System
 ai_tiers = []
 
-# Tier 1: Primary OpenRouter
-tier1_key = os.getenv("OPENROUTER_API_KEY")
-tier1_model = os.getenv("OPENROUTER_MODEL")
-if tier1_key and tier1_key != "your_api_key_here":
-    try:
-        ai_tiers.append({
-            "client": OpenRouterClient(tier1_key, tier1_model),
-            "name": f"Tier 1 (OpenRouter - {tier1_model})",
-            "tier": 1
-        })
-        logger.info(f"[OK] Tier 1 initialized: {tier1_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 1 failed to initialize: {e}")
-
-# Tier 2: Secondary OpenRouter
-tier2_key = os.getenv("OPENROUTER_API_KEY_2")
-tier2_model = os.getenv("OPENROUTER_MODEL_2")
-if tier2_key and tier2_key != "your_api_key_here":
-    try:
-        ai_tiers.append({
-            "client": OpenRouterClient(tier2_key, tier2_model),
-            "name": f"Tier 2 (OpenRouter - {tier2_model})",
-            "tier": 2
-        })
-        logger.info(f"[OK] Tier 2 initialized: {tier2_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 2 failed to initialize: {e}")
-
-# Tier 3: Third OpenRouter
-tier3_key = os.getenv("OPENROUTER_API_KEY_3")
-tier3_model = os.getenv("OPENROUTER_MODEL_3")
-if tier3_key and tier3_key != "your_third_api_key_here":
-    try:
-        ai_tiers.append({
-            "client": OpenRouterClient(tier3_key, tier3_model),
-            "name": f"Tier 3 (OpenRouter - {tier3_model})",
-            "tier": 3
-        })
-        logger.info(f"[OK] Tier 3 initialized: {tier3_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 3 failed to initialize: {e}")
-
-# Tier 4: Fourth OpenRouter
-tier4_key = os.getenv("OPENROUTER_API_KEY_4")
-tier4_model = os.getenv("OPENROUTER_MODEL_4")
-if tier4_key and tier4_key != "your_fourth_api_key_here":
-    try:
-        ai_tiers.append({
-            "client": OpenRouterClient(tier4_key, tier4_model),
-            "name": f"Tier 4 (OpenRouter - {tier4_model})",
-            "tier": 4
-        })
-        logger.info(f"[OK] Tier 4 initialized: {tier4_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 4 failed to initialize: {e}")
-
-# Tier 5: Fifth OpenRouter
-tier5_key = os.getenv("OPENROUTER_API_KEY_5")
-tier5_model = os.getenv("OPENROUTER_MODEL_5")
-if tier5_key and tier5_key != "your_fifth_api_key_here":
-    try:
-        ai_tiers.append({
-            "client": OpenRouterClient(tier5_key, tier5_model),
-            "name": f"Tier 5 (OpenRouter - {tier5_model})",
-            "tier": 5
-        })
-        logger.info(f"[OK] Tier 5 initialized: {tier5_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 5 failed to initialize: {e}")
+# Tier 1-5: OpenRouter Fallback Chain
+for i in range(1, 6):
+    key_env = f"OPENROUTER_API_KEY{'_' + str(i) if i > 1 else ''}"
+    model_env = f"OPENROUTER_MODEL{'_' + str(i) if i > 1 else ''}"
+    key = os.getenv(key_env)
+    model = os.getenv(model_env)
+    
+    if key and key not in ["your_api_key_here", "your_third_api_key_here", "your_fourth_api_key_here", "your_fifth_api_key_here"]:
+        try:
+            ai_tiers.append({
+                "client": OpenRouterClient(key, model),
+                "name": f"Tier {i} (OpenRouter - {model})",
+                "tier": i
+            })
+            logger.info(f"[OK] Tier {i} initialized: {model}")
+        except Exception as e:
+            logger.error(f"[FAIL] Tier {i} failed to initialize: {e}")
 
 # Tier 6: Gemini Fallback
 tier6_key = os.getenv("GEMINI_API_KEY_6") or API_KEY
