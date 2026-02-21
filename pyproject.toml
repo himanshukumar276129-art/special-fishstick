@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vigilant-engine"
+version = "0.1.0"
+description = "Vigilant Engine with Multi-Provider Support"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flask",
+    "flask-cors",
+    "python-dotenv",
+    "requests",
+    "google-generativeai",
+    "razorpay",
+    "comet_ml",
+    "pollinations",
+    "chutes",
+    "ollama",
+    "bytez",
+    "wikipedia",
+    "nasa",
+    "google-api-python-client",
+    "google-auth-oauthlib",
+    "google-auth-httplib2",
+    "tavily-python",
+    "replicate",
+    "klingai",
+    "veo",
+    "emoji",
+    "stability-sdk",
+    "freepik-sdk",
+    "clipdrop",
+    "picsart",
+    "logokit",
+    "logodev",
+    "ollama-python",
+    "deepai_api",
+    "newsapi-python",
+    "yfinance",
+    "nasa-python",
+    "wikipedia-api",
+    "google-search-results",
+    "python-dateutil",
+    "cryptography",
+    "Pillow",
+    "gspread",
+    "oauth2client",
+]
+
+[tool.setuptools]
+package-dir = {"" = "."}
