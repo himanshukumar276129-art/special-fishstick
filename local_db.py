@@ -3,7 +3,14 @@ import uuid
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DB_NAME = "users.db"
+import os
+
+# Use /tmp on Vercel since the root is read-only
+if os.environ.get('VERCEL'):
+    DB_NAME = "/tmp/users.db"
+else:
+    DB_NAME = "users.db"
+
 
 def init_db():
     try:
