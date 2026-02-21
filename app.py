@@ -72,8 +72,15 @@ if not os.environ.get('VERCEL'):
         print(f"Could not initialize file logging: {e}")
 
 import local_db
-# Initialize DB on startup
-local_db.init_db()
+
+# --- STARTUP WRAPPER FOR VERCEL RESILIENCE ---
+try:
+    logger.info("Starting GlobleXGPT initialization...")
+    # Initialize DB on startup
+    local_db.init_db()
+except Exception as e:
+    logger.critical(f"FATAL STARTUP ERROR (DB): {e}")
+    print(f"CRITICAL: Database initialization failed: {e}")
 
 app = Flask(__name__)
 CORS(app)
@@ -92,125 +99,65 @@ def handle_500_error(e):
     logger.error(f"Internal Server Error: {e}")
     return jsonify({"response": "I couldn't get a response. Please try again. 😊✨ 🌟🚀", "emotion": "Sad"}), 500
 
-# Load API key from environment variable
+# Helper for defensive initialization
+def safe_init(name, func):
+    try:
+        return func()
+    except Exception as e:
+        logger.error(f"[FAIL] {name} initialization failed: {e}")
+        print(f"ERROR: {name} init fail: {e}")
+        return None
+
+# Load API keys
 API_KEY = os.getenv("GEMINI_API_KEY") 
-if not API_KEY:
-    print("Warning: GEMINI_API_KEY not found in .env file.")
-
-# Usage Limits
-FREE_IMAGE_LIMIT = 2
-FREE_VIDEO_LIMIT = 1
-
-# Load Google OAuth Credentials
 GOOGLE_CLIENT_ID = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
 GOOGLE_CLIENT_SECRET = (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip()
-
-if not GOOGLE_CLIENT_ID:
-    print("Warning: GOOGLE_CLIENT_ID not found in .env file.")
-
-gemini = GeminiClient(API_KEY)
-system = SystemControl()
-weather = WeatherService(os.getenv("OPENWEATHER_API_KEY"))
-news = NewsService(os.getenv("NEWS_API_KEY"))
-crypto = CryptoService(os.getenv("CMC_API_KEY"))
-stock = StockService(os.getenv("ALPHA_VANTAGE_API_KEY"))
-youtube = YouTubeService(os.getenv("YOUTUBE_API_KEY"))
-wikipedia = WikipediaClient(os.getenv("WIKIPEDIA_URL", "https://www.wikipedia.org/"))
-nasa = NASAClient(os.getenv("NASA_API_KEY"), os.getenv("NASA_BASE_URL", "https://api.nasa.gov/"))
-
-# Initialize ClipDrop Assistant
-clipdrop_keys = [
-    os.getenv("CLIPDROP_API_KEY"),
-    os.getenv("CLIPDROP_API_KEY_2"),
-    os.getenv("CLIPDROP_API_KEY_3")
-]
-clipdrop_keys = [k for k in clipdrop_keys if k] # Filter out None values
-
-clipdrop_assistant = None
-if clipdrop_keys:
-    clipdrop_assistant = ClipDropClient(clipdrop_keys)
-    logger.info(f"[OK] ClipDrop Image Enhancement enabled ({len(clipdrop_keys)} keys)")
-
-# Initialize DeepAI Assistant
-DEEPAI_API_KEY = os.getenv("DEEPAI_API_KEY")
-deepai_assistant = None
-if DEEPAI_API_KEY:
-    deepai_assistant = DeepAIClient(DEEPAI_API_KEY)
-    logger.info("[OK] DeepAI Image Enhancement enabled")
-
-# Initialize Picsart Assistant
-picsart_keys = [
-    os.getenv("PICSART_API_KEY"),
-    os.getenv("PICSART_API_KEY_2")
-]
-picsart_keys = [k for k in picsart_keys if k] # Filter out None values
-
-picsart_assistant = None
-if picsart_keys:
-    picsart_assistant = PicsartClient(picsart_keys)
-    logger.info(f"[OK] Picsart Image Enhancement enabled ({len(picsart_keys)} keys)")
-
-# Initialize PicWish Assistant
-PICWISH_API_KEY = os.getenv("PICWISH_API_KEY")
-picwish_assistant = None
-if PICWISH_API_KEY:
-    picwish_assistant = PicWishClient(PICWISH_API_KEY)
-    logger.info("[OK] PicWish Image Enhancement enabled")
-
-# Initialize A1.art Logo Maker
-a1_keys = [
-    os.getenv("LOGO_MAKER_API_KEY"),
-    os.getenv("LOGO_MAKER_API_KEY_2"),
-    os.getenv("LOGO_MAKER_API_KEY_3"),
-    os.getenv("LOGO_MAKER_API_KEY_4")
-]
-a1_keys = [k for k in a1_keys if k]
-A1_ART_MODEL = os.getenv("LOGO_MAKER_MODEL") or "A1.art"
-a1_art_assistant = None
-if a1_keys:
-    a1_art_assistant = A1ArtClient(a1_keys, A1_ART_MODEL)
-    logger.info(f"[OK] A1.art Logo Maker enabled with {len(a1_keys)} keys")
-
-# Initialize Pollinations Assistant (for AI Logos)
-pollinations_keys = [
-    os.getenv("POLLINATIONS_API_KEY"),
-    os.getenv("POLLINATIONS_API_KEY_2"),
-    os.getenv("POLLINATIONS_API_KEY_3"),
-    os.getenv("POLLINATIONS_API_KEY_4")
-]
-pollinations_keys = [k for k in pollinations_keys if k]
-pollinations_assistant = None
-if pollinations_keys:
-    pollinations_assistant = PollinationsClient(pollinations_keys)
-    logger.info(f"[OK] Pollinations Logo Assistant enabled with {len(pollinations_keys)} keys")
-
-# Initialize Logo.dev Assistant
-logo_dev_keys = [
-    {"pk": os.getenv("LOGO_DEV_PUBLISHABLE_KEY"), "sk": os.getenv("LOGO_DEV_SECRET_KEY")},
-    {"pk": os.getenv("LOGO_DEV_PUBLISHABLE_KEY_2"), "sk": os.getenv("LOGO_DEV_SECRET_KEY_2")},
-    {"pk": os.getenv("LOGO_DEV_PUBLISHABLE_KEY_3"), "sk": os.getenv("LOGO_DEV_SECRET_KEY_3")},
-    {"pk": os.getenv("LOGO_DEV_PUBLISHABLE_KEY_4"), "sk": os.getenv("LOGO_DEV_SECRET_KEY_4")}
-]
-logo_dev_keys = [kp for kp in logo_dev_keys if kp.get("pk")]
-logo_dev_assistant = None
-if logo_dev_keys:
-    logo_dev_assistant = LogoDevClient(logo_dev_keys)
-    logger.info(f"[OK] Logo.dev Assistant enabled with {len(logo_dev_keys)} keys")
-
-# Razorpay Configuration
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
-razorpay_client = None
 
-if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
-    try:
-        logger.info(f"Attempting to initialize Razorpay with Key ID: {RAZORPAY_KEY_ID[:8]}...")
-        razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
-        logger.info("[OK] Razorpay Client initialized")
-    except Exception as e:
-        logger.error(f"[FAIL] Razorpay initialization failed: {e}")
-else:
-    logger.warning("[WARN] Razorpay keys not found in environment!")
+# Initialize Clients Safely
+gemini = safe_init("Gemini", lambda: GeminiClient(API_KEY))
+system = safe_init("System", lambda: SystemControl())
+weather = safe_init("Weather", lambda: WeatherService(os.getenv("OPENWEATHER_API_KEY")))
+news = safe_init("News", lambda: NewsService(os.getenv("NEWS_API_KEY")))
+crypto = safe_init("Crypto", lambda: CryptoService(os.getenv("CMC_API_KEY")))
+stock = safe_init("Stock", lambda: StockService(os.getenv("ALPHA_VANTAGE_API_KEY")))
+youtube = safe_init("YouTube", lambda: YouTubeService(os.getenv("YOUTUBE_API_KEY")))
+wikipedia = safe_init("Wikipedia", lambda: WikipediaClient(os.getenv("WIKIPEDIA_URL", "https://www.wikipedia.org/")))
+nasa = safe_init("NASA", lambda: NASAClient(os.getenv("NASA_API_KEY"), os.getenv("NASA_BASE_URL", "https://api.nasa.gov/")))
+
+# ClipDrop
+clipdrop_keys = [k for k in [os.getenv("CLIPDROP_API_KEY"), os.getenv("CLIPDROP_API_KEY_2"), os.getenv("CLIPDROP_API_KEY_3")] if k]
+clipdrop_assistant = safe_init("ClipDrop", lambda: ClipDropClient(clipdrop_keys)) if clipdrop_keys else None
+
+# DeepAI
+DEEPAI_API_KEY = os.getenv("DEEPAI_API_KEY")
+deepai_assistant = safe_init("DeepAI", lambda: DeepAIClient(DEEPAI_API_KEY)) if DEEPAI_API_KEY else None
+
+# Picsart
+picsart_keys = [k for k in [os.getenv("PICSART_API_KEY"), os.getenv("PICSART_API_KEY_2")] if k]
+picsart_assistant = safe_init("Picsart", lambda: PicsartClient(picsart_keys)) if picsart_keys else None
+
+# PicWish
+PICWISH_API_KEY = os.getenv("PICWISH_API_KEY")
+picwish_assistant = safe_init("PicWish", lambda: PicWishClient(PICWISH_API_KEY)) if PICWISH_API_KEY else None
+
+# Initialize A1.art Logo Maker
+a1_keys = [k for k in [os.getenv("LOGO_MAKER_API_KEY"), os.getenv("LOGO_MAKER_API_KEY_2"), os.getenv("LOGO_MAKER_API_KEY_3"), os.getenv("LOGO_MAKER_API_KEY_4")] if k]
+A1_ART_MODEL = os.getenv("LOGO_MAKER_MODEL") or "A1.art"
+a1_art_assistant = safe_init("A1.art", lambda: A1ArtClient(a1_keys, A1_ART_MODEL)) if a1_keys else None
+
+# Initialize Pollinations Assistant
+pollinations_keys = [k for k in [os.getenv("POLLINATIONS_API_KEY"), os.getenv("POLLINATIONS_API_KEY_2"), os.getenv("POLLINATIONS_API_KEY_3"), os.getenv("POLLINATIONS_API_KEY_4")] if k]
+pollinations_assistant = safe_init("Pollinations", lambda: PollinationsClient(pollinations_keys)) if pollinations_keys else None
+
+# Initialize Logo.dev Assistant
+logo_dev_keys = [{"pk": os.getenv(f"LOGO_DEV_PUBLISHABLE_KEY{'_' + str(i) if i > 1 else ''}"), "sk": os.getenv(f"LOGO_DEV_SECRET_KEY{'_' + str(i) if i > 1 else ''}")} for i in range(1, 5)]
+logo_dev_keys = [kp for kp in logo_dev_keys if kp.get("pk")]
+logo_dev_assistant = safe_init("Logo.dev", lambda: LogoDevClient(logo_dev_keys)) if logo_dev_keys else None
+
+# Razorpay Configuration
+razorpay_client = safe_init("Razorpay", lambda: razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))) if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET else None
 
 # Initialize AI Assistants - 7 Tier Fallback System
 ai_tiers = []
@@ -483,72 +430,43 @@ secondary_ai = ai_tiers[1]["client"] if len(ai_tiers) > 1 else None
 third_ai = ai_tiers[2]["client"] if len(ai_tiers) > 2 else GeminiClient(API_KEY)
 
 # Initialize Image Assistant
-IMAGEN_API_KEY = os.getenv("IMAGEN_API_KEY")
-IMAGEN_MODEL = os.getenv("IMAGEN_MODEL")
-imagen_assistant = None
-
-if IMAGEN_API_KEY:
-    imagen_assistant = ImagenClient(IMAGEN_API_KEY, IMAGEN_MODEL)
-    logger.info(f"Image generation enabled with model: {IMAGEN_MODEL}")
+imagen_assistant = safe_init("Imagen", lambda: ImagenClient(os.getenv("IMAGEN_API_KEY"), os.getenv("IMAGEN_MODEL"))) if os.getenv("IMAGEN_API_KEY") else None
 
 # Initialize Stability Assistant
-STABILITY_API_KEY = os.getenv("STABILITY_API_KEY")
-STABILITY_MODEL = os.getenv("STABILITY_MODEL")
-stability_assistant = None
+stability_assistant = safe_init("Stability", lambda: StabilityClient(os.getenv("STABILITY_API_KEY"), os.getenv("STABILITY_MODEL"))) if os.getenv("STABILITY_API_KEY") else None
 
-if STABILITY_API_KEY:
-    stability_assistant = StabilityClient(STABILITY_API_KEY, STABILITY_MODEL)
-    logger.info(f"Stability AI enabled with model: {STABILITY_MODEL}")
+# Initialize Kling AI Assistants
+kling_assistant = safe_init("Kling Primary", lambda: KlingClient(os.getenv("KLING_ACCESS_KEY"), os.getenv("KLING_SECRET_KEY"))) if os.getenv("KLING_ACCESS_KEY") else None
+kling_assistant_2 = safe_init("Kling Tier 2", lambda: KlingClient(os.getenv("KLING_ACCESS_KEY_2"), os.getenv("KLING_SECRET_KEY_2"))) if os.getenv("KLING_ACCESS_KEY_2") else None
+kling_assistant_3 = safe_init("Kling Tier 3", lambda: KlingClient(os.getenv("KLING_ACCESS_KEY_3"), os.getenv("KLING_SECRET_KEY_3"))) if os.getenv("KLING_ACCESS_KEY_3") else None
+kling_assistant_4 = safe_init("Kling Tier 4", lambda: KlingClient(os.getenv("KLING_ACCESS_KEY_4"), os.getenv("KLING_SECRET_KEY_4"))) if os.getenv("KLING_ACCESS_KEY_4") else None
 
-# Initialize Kling AI Assistant (Primary Video)
-KLING_ACCESS_KEY = os.getenv("KLING_ACCESS_KEY")
-KLING_SECRET_KEY = os.getenv("KLING_SECRET_KEY")
-kling_assistant = None
+# Initialize GitHub Assistant
+github_assistant = safe_init("GitHub Assistant", lambda: GitHubClient(os.getenv("GITHUB_ACCESS_TOKEN"))) if os.getenv("GITHUB_ACCESS_TOKEN") else None
 
-if KLING_ACCESS_KEY and KLING_SECRET_KEY:
-    try:
-        kling_assistant = KlingClient(KLING_ACCESS_KEY, KLING_SECRET_KEY)
-        logger.info("[OK] Kling AI Video enabled (Primary)")
-    except Exception as e:
-        logger.error(f"[FAIL] Kling AI initialization failed: {e}")
+# Initialize Replicate Assistants
+replicate_assistant = safe_init("Replicate Primary", lambda: ReplicateClient(os.getenv("REPLICATE_API_TOKEN"), os.getenv("REPLICATE_MODEL") or "minimax/video-01")) if os.getenv("REPLICATE_API_TOKEN") else None
+replicate_assistant_2 = safe_init("Replicate Tier 2", lambda: ReplicateClient(os.getenv("REPLICATE_API_TOKEN_2"), os.getenv("REPLICATE_MODEL") or "minimax/video-01")) if os.getenv("REPLICATE_API_TOKEN_2") else None
+replicate_assistant_3 = safe_init("Replicate Tier 3", lambda: ReplicateClient(os.getenv("REPLICATE_API_TOKEN_3"), os.getenv("REPLICATE_MODEL") or "minimax/video-01")) if os.getenv("REPLICATE_API_TOKEN_3") else None
+replicate_assistant_4 = safe_init("Replicate Tier 4", lambda: ReplicateClient(os.getenv("REPLICATE_API_TOKEN_4"), os.getenv("REPLICATE_MODEL") or "minimax/video-01")) if os.getenv("REPLICATE_API_TOKEN_4") else None
 
-# Initialize Kling AI Assistant Tier 2
-KLING_ACCESS_KEY_2 = os.getenv("KLING_ACCESS_KEY_2")
-KLING_SECRET_KEY_2 = os.getenv("KLING_SECRET_KEY_2")
-kling_assistant_2 = None
+# Initialize Runway Assistant
+runway_assistant = safe_init("Runway", lambda: RunwayClient(os.getenv("RUNWAYML_API_KEY"))) if os.getenv("RUNWAYML_API_KEY") else None
 
-if KLING_ACCESS_KEY_2 and KLING_SECRET_KEY_2:
-    try:
-        kling_assistant_2 = KlingClient(KLING_ACCESS_KEY_2, KLING_SECRET_KEY_2)
-        logger.info("[OK] Kling AI Video enabled (Tier 2)")
-    except Exception as e:
-        logger.error(f"[FAIL] Kling AI Tier 2 initialization failed: {e}")
+# Initialize Veo Assistants
+veo_assistant = safe_init("Veo Tier 1", lambda: VeoClient(os.getenv("VEO_API_KEY"), os.getenv("VEO_MODEL") or "veo3")) if os.getenv("VEO_API_KEY") else None
+veo_assistant_2 = safe_init("Veo Tier 2", lambda: VeoClient(os.getenv("VEO_API_KEY_2"), os.getenv("VEO_MODEL") or "veo3")) if os.getenv("VEO_API_KEY_2") else None
+veo_assistant_3 = safe_init("Veo Tier 3", lambda: VeoClient(os.getenv("VEO_API_KEY_3"), os.getenv("VEO_MODEL") or "veo3")) if os.getenv("VEO_API_KEY_3") else None
+veo_assistant_4 = safe_init("Veo Tier 4", lambda: VeoClient(os.getenv("VEO_API_KEY_4"), os.getenv("VEO_MODEL") or "veo3")) if os.getenv("VEO_API_KEY_4") else None
 
-# Initialize Kling AI Assistant Tier 3
-KLING_ACCESS_KEY_3 = os.getenv("KLING_ACCESS_KEY_3")
-KLING_SECRET_KEY_3 = os.getenv("KLING_SECRET_KEY_3")
-kling_assistant_3 = None
+# Initialize Freepik Assistants
+freepik_assistant = safe_init("Freepik Tier 1", lambda: FreepikClient(os.getenv("FREEPIK_API_KEY"))) if os.getenv("FREEPIK_API_KEY") else None
+freepik_assistant_2 = safe_init("Freepik Tier 2", lambda: FreepikClient(os.getenv("FREEPIK_API_KEY_2"))) if os.getenv("FREEPIK_API_KEY_2") else None
+freepik_assistant_3 = safe_init("Freepik Tier 3", lambda: FreepikClient(os.getenv("FREEPIK_API_KEY_3"))) if os.getenv("FREEPIK_API_KEY_3") else None
+freepik_assistant_4 = safe_init("Freepik Tier 4", lambda: FreepikClient(os.getenv("FREEPIK_API_KEY_4"))) if os.getenv("FREEPIK_API_KEY_4") else None
 
-if KLING_ACCESS_KEY_3 and KLING_SECRET_KEY_3:
-    try:
-        kling_assistant_3 = KlingClient(KLING_ACCESS_KEY_3, KLING_SECRET_KEY_3)
-        logger.info("[OK] Kling AI Video enabled (Tier 3)")
-    except Exception as e:
-        logger.error(f"[FAIL] Kling AI Tier 3 initialization failed: {e}")
-
-# Initialize Kling AI Assistant Tier 4
-KLING_ACCESS_KEY_4 = os.getenv("KLING_ACCESS_KEY_4")
-KLING_SECRET_KEY_4 = os.getenv("KLING_SECRET_KEY_4")
-kling_assistant_4 = None
-
-if KLING_ACCESS_KEY_4 and KLING_SECRET_KEY_4:
-    try:
-        kling_assistant_4 = KlingClient(KLING_ACCESS_KEY_4, KLING_SECRET_KEY_4)
-        logger.info("[OK] Kling AI Video enabled (Tier 4)")
-    except Exception as e:
-        logger.error(f"[FAIL] Kling AI Tier 4 initialization failed: {e}")
-    except Exception as e:
-        logger.error(f"[FAIL] Kling AI Tier 4 initialization failed: {e}")
+# Initialize Hugging Face Assistant
+huggingface_assistant = safe_init("HuggingFace", lambda: HuggingFaceClient(os.getenv("HUGGINGFACE_API_KEY"))) if os.getenv("HUGGINGFACE_API_KEY") else None
 
 # Initialize GitHub Models Client (Tier 8)
 GITHUB_ACCESS_TOKEN = os.getenv("GITHUB_ACCESS_TOKEN")
@@ -674,6 +592,14 @@ huggingface_assistant = None
 if HUGGINGFACE_API_KEY:
     huggingface_assistant = HuggingFaceClient(HUGGINGFACE_API_KEY)
     logger.info("Hugging Face Image AI enabled")
+
+@app.route('/health')
+def health():
+    return jsonify({
+        "status": "up",
+        "environment": "Vercel" if os.environ.get('VERCEL') else "Local",
+        "timestamp": datetime.now().isoformat()
+    })
 
 @app.route('/')
 def index():
