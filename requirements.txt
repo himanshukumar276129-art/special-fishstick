@@ -4,6 +4,8 @@ python-dotenv
 requests
 google-generativeai
 razorpay
+google-auth
+urllib3
 google-api-python-client
 google-auth-oauthlib
 google-auth-httplib2
@@ -21,3 +23,5 @@ PyJWT
 runwayml
 qrcode
 duckduckgo_search
+json5
+tqdm
