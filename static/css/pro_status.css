@@ -1,0 +1,113 @@
+/* Pro Plan UI Components */
+.user-avatar-tiny {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 0;
+}
+
+.pro-badge {
+    animation: goldGlow 2s infinite alternate;
+    cursor: default;
+    user-select: none;
+    background: linear-gradient(135deg, #FFD700, #FFA500) !important;
+    color: #000 !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    margin-left: 8px !important;
+}
+
+@keyframes goldGlow {
+    from {
+        box-shadow: 0 0 2px rgba(255, 215, 0, 0.4);
+    }
+
+    to {
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
+    }
+}
+
+/* Pro Status Mode (When button becomes a label) */
+.pro-status-mode {
+    animation: none !important;
+    cursor: default !important;
+    background: linear-gradient(135deg, #FFD700, #FFA500) !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important;
+    pointer-events: none;
+    /* Make it just a label */
+}
+
+.pro-status-mode svg {
+    animation: none !important;
+}
+
+.welcome-pro-tag {
+    display: inline-block;
+    padding: 0 5px;
+    letter-spacing: 1px;
+    background: linear-gradient(135deg, #FFD700, #FFA500, #FFE4B5);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    animation: shine 3s linear infinite;
+}
+
+@keyframes shine {
+    to {
+        background-position: 200% center;
+    }
+}
+
+/* Premium Pro Brand Effect */
+.pro-brand-effect {
+    background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800 !important;
+    animation: shine 2s linear infinite;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.pro-header-glow {
+    position: relative;
+}
+
+.pro-header-glow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.1);
+    pointer-events: none;
+    animation: pulseGlow 4s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.pro-border-rainbow {
+    border: 2px solid transparent !important;
+    background-image: linear-gradient(var(--bg-main), var(--bg-main)),
+        radial-gradient(circle at top left, #FFD700, #FFA500, #FFD700) !important;
+    background-origin: border-box !important;
+    background-clip: content-box, border-box !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2) !important;
+}

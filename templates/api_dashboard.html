@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>API Dashboard | GlobleXGPT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pro_status.css') }}">
+    <link rel="icon" href="/static/img/logo.jpg">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+        .api-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .api-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .api-header {
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .api-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff, var(--primary-color));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .api-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .key-display-area {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: 'Courier New', monospace;
+            position: relative;
+        }
+
+        .blur-key {
+            filter: blur(5px);
+            user-select: none;
+            transition: filter 0.3s;
+        }
+
+        .blur-key:hover {
+            filter: blur(0);
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.4);
+        }
+
+        .endpoint-url {
+            color: var(--accent-green);
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #333;
+            margin-top: 10px;
+        }
+
+        .go-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .go-back:hover {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+
+        <main class="main-content" style="width: 100%; height: 100vh; overflow-y: auto;">
+            <div class="api-container">
+                <a href="/" class="go-back">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                    Back to Chat
+                </a>
+
+                <div class="api-card">
+                    <div class="api-header">
+                        <h1>Globle-1 API Dashboard</h1>
+                        <p class="api-description">Generate API keys to integrate the powerful Globle-1 model into your
+                            own applications. Access GPT-4o, Claude 3.5, Gemini 1.5, and more through a single unified
+                            endpoint.</p>
+                    </div>
+
+                    <div id="logged-out-view" style="text-align: center; padding: 40px;">
+                        <svg viewBox="0 0 24 24" width="64" height="64" stroke="currentColor" stroke-width="1"
+                            fill="none" style="color: var(--text-secondary); margin-bottom: 20px;">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <h3 style="margin-bottom: 10px;">Authentication Required</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 20px;">Please log in to generate and
+                            manage your API keys.</p>
+                        <button onclick="window.location.href='/'" class="generate-btn">Log In</button>
+                    </div>
+
+                    <div id="logged-in-view" style="display: none;">
+                        <div class="key-section">
+                            <div
+                                style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 5px;">
+                                        ACCOUNT</h4>
+                                    <span id="user-email-display"
+                                        style="color: var(--text-primary); font-weight: 600;"></span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <h4 style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 5px;">
+                                        DAILY LIMIT</h4>
+                                    <span style="color: var(--accent-green); font-weight: 600;">1,000,000 Tokens</span>
+                                </div>
+                            </div>
+
+                            <h3>Your API Key</h3>
+                            <div class="key-display-area" id="key-display">
+                                <span id="api-key-text" style="color: var(--text-secondary);">No API Key Generated
+                                    Yet</span>
+                                <button class="copy-btn" id="copy-key-btn" style="display: none;">Copy</button>
+                            </div>
+
+                            <button id="generate-key-btn" class="generate-btn">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
+                                    fill="none">
+                                    <path
+                                        d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                                </svg>
+                                <span>Generate New API Key</span>
+                            </button>
+                            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-secondary);">
+                                ⚠️ Generating a new key will revoke your previous key immediately. Keep your key secure!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-card">
+                    <h3>Integration Guide</h3>
+                    <p class="api-description">Use your API key to make requests to the Globle-1 Unified Endpoint.</p>
+
+                    <div style="margin-top: 20px;">
+                        <h4>Endpoint</h4>
+                        <code class="endpoint-url">POST /api/v1/chat/completions</code>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <h4>Python Example (Using Library)</h4>
+                        <div class="code-block">
+                            <pre><code class="language-python">from globlexgptai import GlobleXGPTAiClient
+
+# Initialize the client with your key
+client = GlobleXGPTAiClient(api_key="your_globle_api_key")
+
+# Generate a response
+response = client.generate("Hello Globle-1, how are you?")
+print(response)</code></pre>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <h4>cURL Example</h4>
+                        <div class="code-block">
+                            <pre><code class="language-bash">curl -X POST {{ url_for('index', _external=True) }}api/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "globle-1",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'</code></pre>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                        <h3>🚀 Getting Started</h3>
+                        <p class="api-description">Follow these steps to start using Globle-1 in your projects.</p>
+
+                        <div style="margin-top: 15px;">
+                            <h4 style="color: var(--text-primary); margin-bottom: 8px;">1. Install Python (if not
+                                installed)</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary);">Download and install Python from
+                                <a href="https://www.python.org/downloads/" target="_blank"
+                                    style="color: var(--accent-purple);">python.org</a>.
+                            </p>
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <h4 style="color: var(--text-primary); margin-bottom: 8px;">2. Install GlobleXGPTAi Library
+                            </h4>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 5px;">Open your
+                                terminal or command prompt and run:</p>
+                            <div class="code-block" style="padding: 10px;">
+                                <pre><code class="language-bash">pip install globlexgptai</code></pre>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <h4 style="color: var(--text-primary); margin-bottom: 8px;">3. Create Your Script</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary);">Create a new file named
+                                <code>main.py</code>, copy the Python Example code above, replace
+                                <code>your_globle_api_key</code> with your actual key, and run it:
+                            </p>
+                            <div class="code-block" style="padding: 10px;">
+                                <pre><code class="language-bash">python main.py</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userStr = localStorage.getItem('user');
+            const loggedInView = document.getElementById('logged-in-view');
+            const loggedOutView = document.getElementById('logged-out-view');
+            const generateBtn = document.getElementById('generate-key-btn');
+            const keyText = document.getElementById('api-key-text');
+            const copyBtn = document.getElementById('copy-key-btn');
+
+            hljs.highlightAll();
+
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                loggedInView.style.display = 'block';
+                loggedOutView.style.display = 'none';
+
+                // Check if key exists (simulated for now, real app would check DB status via API)
+                // For security, we usually don't send the full key back on page load, 
+                // but we can show a masked version if stored, or just "Key Active"
+                // Here we'll just handle the generation part.
+
+                if (user.email) {
+                    document.getElementById('user-email-display').innerText = user.email;
+
+                    // Check if user already has a key
+                    fetch('/api/user/key_status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: user.email })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.has_key) {
+                                keyText.innerText = "••••••••••••••••••••••••••••••••";
+                                keyText.style.color = "var(--text-primary)";
+                                keyText.style.letterSpacing = "2px";
+                                generateBtn.innerHTML = `
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                                <span>Regenerate Key</span>
+                            `;
+                                const statusMsg = document.createElement('div');
+                                statusMsg.innerText = "✅ Active API Key Present";
+                                statusMsg.style.color = "var(--accent-green)";
+                                statusMsg.style.marginTop = "5px";
+                                statusMsg.style.fontSize = "0.9rem";
+                                keyText.parentNode.insertBefore(statusMsg, keyText.nextSibling);
+                            }
+                        })
+                        .catch(e => console.error("Key check failed", e));
+                }
+            } else {
+                loggedInView.style.display = 'none';
+                loggedOutView.style.block = 'block';
+            }
+
+            generateBtn.addEventListener('click', async () => {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || !user.email) return;
+
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<span>Generating...</span>';
+
+                try {
+                    const response = await fetch('/api/user/generate_key', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email: user.email })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        keyText.innerText = data.api_key;
+                        keyText.style.color = 'var(--accent-green)';
+                        keyText.style.fontWeight = 'bold';
+                        keyText.style.letterSpacing = "0px"; // Reset letter spacing
+                        keyText.classList.remove('blur-key'); // Show clearly first time
+                        copyBtn.style.display = 'block';
+
+                        alert("New API Key Generated! Copy it now, you won't be able to see it again.");
+                    } else {
+                        alert(data.error || "Failed to generate key");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Network error");
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                        <span>Regenerate Key</span>
+                    `;
+                }
+            });
+
+            copyBtn.addEventListener('click', () => {
+                const text = keyText.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = copyBtn.innerText;
+                    copyBtn.innerText = 'Copied!';
+                    setTimeout(() => copyBtn.innerText = originalText, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

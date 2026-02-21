@@ -1,0 +1,30 @@
+/* User Menu (Logout) */
+.user-menu {
+    background: var(--bg-hover);
+    border-radius: 8px;
+    margin: 0 12px 8px 12px;
+    /* Match sidebar padding */
+    overflow: hidden;
+    animation: fadeIn 0.2s;
+    border: 1px solid var(--border-color);
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    cursor: pointer;
+    color: #ff453a;
+    /* Red for logout */
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.menu-item:hover {
+    background: rgba(255, 69, 58, 0.1);
+}
+
+.menu-item svg {
+    stroke: currentColor;
+}

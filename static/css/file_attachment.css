@@ -1,0 +1,349 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   📎 FILE ATTACHMENT STYLES - Icon-only compact preview
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* File Preview Container - Integrated into Search Bar */
+.file-preview-container {
+    display: none;
+    align-items: center;
+    padding: 0 4px;
+    z-index: 5;
+    order: 1;
+    /* Positioned after the attach button */
+}
+
+.file-preview-container:not(.hidden) {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* File Preview Item - Icon Only */
+.file-preview-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2px 4px;
+    animation: fadeIn 0.3s ease-out;
+    max-height: 32px;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* File Icon - Compact */
+.file-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(171, 104, 255, 0.2), rgba(171, 104, 255, 0.1));
+    border: 1px solid rgba(171, 104, 255, 0.3);
+    flex-shrink: 0;
+}
+
+/* Image Preview - Small Icon */
+.file-preview-item img {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+/* File Name - Hidden by default, shown on hover */
+.file-preview-name {
+    display: none;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-preview-item:hover .file-preview-name {
+    display: block;
+}
+
+/* File Count Badge - For multiple files */
+.file-count-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--accent-purple);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-main);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Remove Button - Compact */
+.file-remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: none;
+}
+
+.file-preview-item:hover .file-remove-btn {
+    display: block;
+}
+
+.file-remove-btn:hover {
+    background: rgba(255, 69, 58, 0.1);
+    color: #ff453a;
+}
+
+/* File Type Icons */
+.file-icon.image {
+    background: linear-gradient(135deg, rgba(52, 168, 83, 0.2), rgba(52, 168, 83, 0.1));
+    border-color: rgba(52, 168, 83, 0.3);
+}
+
+.file-icon.document {
+    background: linear-gradient(135deg, rgba(66, 133, 244, 0.2), rgba(66, 133, 244, 0.1));
+    border-color: rgba(66, 133, 244, 0.3);
+}
+
+.file-icon.pdf {
+    background: linear-gradient(135deg, rgba(234, 67, 53, 0.2), rgba(234, 67, 53, 0.1));
+    border-color: rgba(234, 67, 53, 0.3);
+}
+
+.file-icon.code {
+    background: linear-gradient(135deg, rgba(251, 188, 4, 0.2), rgba(251, 188, 4, 0.1));
+    border-color: rgba(251, 188, 4, 0.3);
+}
+
+.file-icon.archive {
+    background: linear-gradient(135deg, rgba(156, 39, 176, 0.2), rgba(156, 39, 176, 0.1));
+    border-color: rgba(156, 39, 176, 0.3);
+}
+
+/* Tooltip on hover */
+.file-preview-item::before {
+    content: attr(data-filename);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 1000;
+}
+
+.file-preview-item:hover::before {
+    opacity: 1;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 767px) {
+    .file-preview-container {
+        left: 40px;
+        margin-bottom: 6px;
+    }
+
+    .file-preview-item {
+        padding: 5px 8px;
+    }
+
+    .file-icon,
+    .file-preview-item img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .file-preview-name {
+        display: none !important;
+        /* Always hidden on mobile */
+    }
+
+    .file-remove-btn {
+        display: block;
+        /* Always visible on mobile */
+        font-size: 16px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   🔍 IMAGE SEARCH INDICATOR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.image-search-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background: rgba(52, 168, 83, 0.1);
+    border: 1px solid rgba(52, 168, 83, 0.2);
+    border-radius: 6px;
+    color: #34a853;
+    margin-left: 4px;
+}
+
+.image-search-indicator svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+}
+
+/* Searching Animation */
+.image-search-indicator.searching {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   📁 DRAG & DROP OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.drag-drop-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(171, 104, 255, 0.1);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.drag-drop-overlay.active {
+    display: flex;
+}
+
+.drag-drop-content {
+    background: var(--bg-sidebar);
+    border: 2px dashed var(--accent-purple);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.drag-drop-content svg {
+    width: 64px;
+    height: 64px;
+    stroke: var(--accent-purple);
+    margin-bottom: 16px;
+}
+
+.drag-drop-content h3 {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.drag-drop-content p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ✨ IMAGE ENHANCE BUTTON
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.image-enhance-btn {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 210, 255, 0.3);
+}
+
+
+.file-preview-item:hover .image-enhance-btn {
+    display: flex;
+}
+
+.image-enhance-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 210, 255, 0.4);
+}
+
+.image-enhance-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.image-enhance-btn.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.image-enhance-btn.loading svg {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
