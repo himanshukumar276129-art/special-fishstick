@@ -2227,10 +2227,10 @@ def admin_upgrade_user():
         }), 500
 
 
-# Register Globle-1 API Blueprint
-from globle_api import globle_api
-app.register_blueprint(globle_api, url_prefix='/api')
-logger.info("[OK] Globle-1 API registered at /api/v1/*")
+# Register Globle-1 API Blueprint (Commented out - missing module)
+# from globle_api import globle_api
+# app.register_blueprint(globle_api, url_prefix='/api')
+# logger.info("[OK] Globle-1 API registered at /api/v1/*")
 
 @app.route('/download_media')
 def download_media():
