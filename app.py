@@ -159,439 +159,87 @@ logo_dev_assistant = safe_init("Logo.dev", lambda: LogoDevClient(logo_dev_keys))
 # Razorpay Configuration
 razorpay_client = safe_init("Razorpay", lambda: razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))) if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET else None
 
-# Initialize AI Assistants - 7 Tier Fallback System
+# Initialize AI Assistants - 23 Tier Fallback System
 ai_tiers = []
 
-# Tier 1-5: OpenRouter Fallback Chain
+# Helper for safe client selection
+def get_tier_client(index, fallback=None):
+    try:
+        if index < len(ai_tiers) and ai_tiers[index]["client"]:
+            return ai_tiers[index]["client"]
+    except:
+        pass
+    return fallback or gemini
+
+# Tier 1-5: OpenRouter
 for i in range(1, 6):
-    key_env = f"OPENROUTER_API_KEY{'_' + str(i) if i > 1 else ''}"
-    model_env = f"OPENROUTER_MODEL{'_' + str(i) if i > 1 else ''}"
-    key = os.getenv(key_env)
-    model = os.getenv(model_env)
-    
-    if key and key not in ["your_api_key_here", "your_third_api_key_here", "your_fourth_api_key_here", "your_fifth_api_key_here"]:
-        try:
-            ai_tiers.append({
-                "client": OpenRouterClient(key, model),
-                "name": f"Tier {i} (OpenRouter - {model})",
-                "tier": i
-            })
-            logger.info(f"[OK] Tier {i} initialized: {model}")
-        except Exception as e:
-            logger.error(f"[FAIL] Tier {i} failed to initialize: {e}")
+    key = os.getenv(f"OPENROUTER_API_KEY{'_' + str(i) if i > 1 else ''}")
+    model = os.getenv(f"OPENROUTER_MODEL{'_' + str(i) if i > 1 else ''}")
+    if key and "your_api_key" not in key:
+        safe_init(f"Tier {i}", lambda: ai_tiers.append({"client": OpenRouterClient(key, model), "name": f"Tier {i} (OR)", "tier": i}))
 
-# Tier 6: Gemini Fallback
-tier6_key = os.getenv("GEMINI_API_KEY_6") or API_KEY
-if tier6_key:
-    try:
-        ai_tiers.append({
-            "client": GeminiClient(tier6_key),
-            "name": "Tier 6 (Gemini - High Reliability Fallback)",
-            "tier": 6
-        })
-        logger.info(f"[OK] Tier 6 initialized: Gemini")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 6 failed to initialize: {e}")
+# Tier 6: Gemini
+safe_init("Tier 6", lambda: ai_tiers.append({"client": GeminiClient(os.getenv("GEMINI_API_KEY_6") or API_KEY), "name": "Tier 6 (Gemini)", "tier": 6}))
 
-# Tier 7: Seventh OpenRouter (Small Text Model)
-tier7_key = os.getenv("OPENROUTER_API_KEY_7")
-tier7_model = os.getenv("OPENROUTER_MODEL_7")
-if tier7_key:
-    try:
-        ai_tiers.append({
-            "client": OpenRouterClient(tier7_key, tier7_model),
-            "name": f"Tier 7 (OpenRouter - {tier7_model})",
-            "tier": 7
-        })
-        logger.info(f"[OK] Tier 7 initialized: {tier7_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 7 failed to initialize: {e}")
+# Tier 7: OpenRouter Secondary
+key7 = os.getenv("OPENROUTER_API_KEY_7")
+if key7: safe_init("Tier 7", lambda: ai_tiers.append({"client": OpenRouterClient(key7, os.getenv("OPENROUTER_MODEL_7")), "name": "Tier 7 (OR)", "tier": 7}))
 
-# Tier 8: Groq (Llama 3.3 70B)
-tier8_key = os.getenv("GROQ_API_KEY")
-tier8_model = os.getenv("GROQ_MODEL")
-if tier8_key:
-    try:
-        ai_tiers.append({
-            "client": GroqClient(tier8_key, tier8_model),
-            "name": f"Tier 8 (Groq - {tier8_model})",
-            "tier": 8
-        })
-        logger.info(f"[OK] Tier 8 initialized: {tier8_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 8 failed to initialize: {e}")
+# Tier 8, 10, 12, 13: Groq
+for i, suffix in [(8, ""), (10, "_2"), (12, "_3"), (13, "_4")]:
+    key = os.getenv(f"GROQ_API_KEY{suffix}")
+    if key: safe_init(f"Tier {i}", lambda: ai_tiers.append({"client": GroqClient(key, os.getenv(f"GROQ_MODEL{suffix}")), "name": f"Tier {i} (Groq)", "tier": i}))
 
-# Tier 9: GitHub Models (GPT-4o)
-tier9_key = os.getenv("GITHUB_ACCESS_TOKEN")
-GITHUB_MODEL = os.getenv("GITHUB_MODEL", "gpt-4o")
-if tier9_key:
-    try:
-        ai_tiers.append({
-            "client": GitHubClient(tier9_key),
-            "name": f"Tier 9 (GitHub Models - {GITHUB_MODEL})",
-            "tier": 9
-        })
-        logger.info(f"[OK] Tier 9 initialized: GitHub Models ({GITHUB_MODEL})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 9 failed to initialize: {e}")
+# Tier 9, 14, 15, 16: GitHub
+for i, suffix in [(9, ""), (14, "_2"), (15, "_3"), (16, "_4")]:
+    key = os.getenv(f"GITHUB_ACCESS_TOKEN{suffix}")
+    if key: safe_init(f"Tier {i}", lambda: ai_tiers.append({"client": GitHubClient(key), "name": f"Tier {i} (GitHub)", "tier": i}))
 
-# Tier 10: Groq Secondary (Llama 3.3 70B)
-tier10_key = os.getenv("GROQ_API_KEY_2")
-tier10_model = os.getenv("GROQ_MODEL_2") or "llama-3.3-70b-versatile"
-if tier10_key:
-    try:
-        ai_tiers.append({
-            "client": GroqClient(tier10_key, tier10_model),
-            "name": f"Tier 10 (Groq 2 - {tier10_model})",
-            "tier": 10
-        })
-        logger.info(f"[OK] Tier 10 initialized: {tier10_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 10 failed to initialize: {e}")
+# Tier 11: Comet
+ckey = os.getenv("COMET_API_KEY")
+if ckey: safe_init("Tier 11", lambda: ai_tiers.append({"client": CometClient(ckey), "name": "Tier 11 (Comet)", "tier": 11}))
 
-# Tier 11: CometAPI (GPT-4o)
-comet_key = os.getenv("COMET_API_KEY")
-if comet_key:
-    try:
-        ai_tiers.append({
-            "client": CometClient(comet_key),
-            "name": "Tier 11 (CometAPI - GPT-4o)",
-            "tier": 11
-        })
-        logger.info("[OK] Tier 11 initialized: CometAPI")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 11 failed to initialize: {e}")
+# Tier 17: Chutes
+ckey = os.getenv("CHUTES_API_KEY")
+if ckey: safe_init("Tier 17", lambda: ai_tiers.append({"client": ChutesClient(ckey, os.getenv("CHUTES_MODEL")), "name": "Tier 17 (Chutes)", "tier": 17}))
 
-# Tier 12: Groq Tertiary (Llama 3.3 70B)
-tier12_key = os.getenv("GROQ_API_KEY_3")
-tier12_model = os.getenv("GROQ_MODEL_3") or "llama-3.3-70b-versatile"
-if tier12_key:
-    try:
-        ai_tiers.append({
-            "client": GroqClient(tier12_key, tier12_model),
-            "name": f"Tier 12 (Groq 3 - {tier12_model})",
-            "tier": 12
-        })
-        logger.info(f"[OK] Tier 12 initialized: {tier12_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 12 failed to initialize: {e}")
+# Tier 18-21: Ollama
+for i, suffix in [(18, ""), (19, "_2"), (20, "_3"), (21, "_4")]:
+    key = os.getenv(f"OLLAMA_API_KEY{suffix}")
+    if key: safe_init(f"Tier {i}", lambda: ai_tiers.append({"client": OllamaClient(key, os.getenv("OLLAMA_MODEL")), "name": f"Tier {i} (Ollama)", "tier": i}))
 
-# Tier 13: Groq Quaternary (Llama 3.3 70B)
-tier13_key = os.getenv("GROQ_API_KEY_4")
-tier13_model = os.getenv("GROQ_MODEL_4") or "llama-3.3-70b-versatile"
-if tier13_key:
-    try:
-        ai_tiers.append({
-            "client": GroqClient(tier13_key, tier13_model),
-            "name": f"Tier 13 (Groq 4 - {tier13_model})",
-            "tier": 13
-        })
-        logger.info(f"[OK] Tier 13 initialized: {tier13_model}")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 13 failed to initialize: {e}")
-
-# Tier 14: GitHub Models Secondary (GPT-4o)
-tier14_key = os.getenv("GITHUB_ACCESS_TOKEN_2")
-if tier14_key:
-    try:
-        ai_tiers.append({
-            "client": GitHubClient(tier14_key),
-            "name": f"Tier 14 (GitHub Models 2 - {GITHUB_MODEL})",
-            "tier": 14
-        })
-        logger.info(f"[OK] Tier 14 initialized: GitHub Models 2 ({GITHUB_MODEL})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 14 failed to initialize: {e}")
-
-# Tier 15: GitHub Models Tertiary (GPT-4o)
-tier15_key = os.getenv("GITHUB_ACCESS_TOKEN_3")
-if tier15_key:
-    try:
-        ai_tiers.append({
-            "client": GitHubClient(tier15_key),
-            "name": f"Tier 15 (GitHub Models 3 - {GITHUB_MODEL})",
-            "tier": 15
-        })
-        logger.info(f"[OK] Tier 15 initialized: GitHub Models 3 ({GITHUB_MODEL})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 15 failed to initialize: {e}")
-
-# Tier 16: GitHub Models Quaternary (GPT-4o)
-tier16_key = os.getenv("GITHUB_ACCESS_TOKEN_4")
-if tier16_key:
-    try:
-        ai_tiers.append({
-            "client": GitHubClient(tier16_key),
-            "name": f"Tier 16 (GitHub Models 4 - {GITHUB_MODEL})",
-            "tier": 16
-        })
-        logger.info(f"[OK] Tier 16 initialized: GitHub Models 4 ({GITHUB_MODEL})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 16 failed to initialize: {e}")
-
-# Tier 17: Chutes AI (DeepSeek-V3)
-chutes_key = os.getenv("CHUTES_API_KEY")
-chutes_model = os.getenv("CHUTES_MODEL")
-if chutes_key:
-    try:
-        ai_tiers.append({
-            "client": ChutesClient(chutes_key, chutes_model),
-            "name": f"Tier 17 (Chutes AI - {chutes_model})",
-            "tier": 17
-        })
-        logger.info(f"[OK] Tier 17 initialized: Chutes AI ({chutes_model})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 17 failed to initialize: {e}")
-
-# Tier 18: Ollama Global (DeepSeek-V3)
-ollama_key = os.getenv("OLLAMA_API_KEY")
-ollama_model = os.getenv("OLLAMA_MODEL")
-if ollama_key:
-    try:
-        ai_tiers.append({
-            "client": OllamaClient(ollama_key, ollama_model),
-            "name": f"Tier 18 (Ollama Global - {ollama_model})",
-            "tier": 18
-        })
-        logger.info(f"[OK] Tier 18 initialized: Ollama Global ({ollama_model})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 18 failed to initialize: {e}")
-
-# Tier 19: Ollama Global Secondary (DeepSeek-V3)
-ollama_key_2 = os.getenv("OLLAMA_API_KEY_2")
-if ollama_key_2:
-    try:
-        ai_tiers.append({
-            "client": OllamaClient(ollama_key_2, ollama_model),
-            "name": f"Tier 19 (Ollama Global 2 - {ollama_model})",
-            "tier": 19
-        })
-        logger.info(f"[OK] Tier 19 initialized: Ollama Global 2 ({ollama_model})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 19 failed to initialize: {e}")
-
-# Tier 20: Ollama Global Tertiary (DeepSeek-V3)
-ollama_key_3 = os.getenv("OLLAMA_API_KEY_3")
-if ollama_key_3:
-    try:
-        ai_tiers.append({
-            "client": OllamaClient(ollama_key_3, ollama_model),
-            "name": f"Tier 20 (Ollama Global 3 - {ollama_model})",
-            "tier": 20
-        })
-        logger.info(f"[OK] Tier 20 initialized: Ollama Global 3 ({ollama_model})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 20 failed to initialize: {e}")
-
-# Tier 21: Ollama Global Quaternary (DeepSeek-V3)
-ollama_key_4 = os.getenv("OLLAMA_API_KEY_4")
-if ollama_key_4:
-    try:
-        ai_tiers.append({
-            "client": OllamaClient(ollama_key_4, ollama_model),
-            "name": f"Tier 21 (Ollama Global 4 - {ollama_model})",
-            "tier": 21
-        })
-        logger.info(f"[OK] Tier 21 initialized: Ollama Global 4 ({ollama_model})")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 21 failed to initialize: {e}")
-
-# Tier 22: Bytez API (DeepSeek-V3 Fallback)
-bytez_key = os.getenv("BYTEZ_API_KEY")
-if bytez_key:
-    try:
-        ai_tiers.append({
-            "client": BytezClient(bytez_key),
-            "name": "Tier 22 (Bytez - DeepSeek-V3 Premium Fallback)",
-            "tier": 22
-        })
-        logger.info("[OK] Tier 22 initialized: Bytez (DeepSeek-V3)")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 22 failed to initialize: {e}")
-
-# Tier 23: Bytez API 2 (Fallback)
-bytez_key_2 = os.getenv("BYTEZ_API_KEY_2")
-if bytez_key_2:
-    try:
-        ai_tiers.append({
-            "client": BytezClient(bytez_key_2),
-            "name": "Tier 23 (Bytez 2 - DeepSeek-V3 Fallback)",
-            "tier": 23
-        })
-        logger.info("[OK] Tier 23 initialized: Bytez 2 (DeepSeek-V3)")
-    except Exception as e:
-        logger.error(f"[FAIL] Tier 23 failed to initialize: {e}")
+# Tier 22-23: Bytez
+for i, suffix in [(22, ""), (23, "_2")]:
+    key = os.getenv(f"BYTEZ_API_KEY{suffix}")
+    if key: safe_init(f"Tier {i}", lambda: ai_tiers.append({"client": BytezClient(key), "name": f"Tier {i} (Bytez)", "tier": i}))
 
 logger.info(f"Total AI tiers available: {len(ai_tiers)}")
+first_ai = get_tier_client(0)
+second_ai = get_tier_client(1)
+third_ai = get_tier_client(2)
 
-# Keep legacy variables for backward compatibility
-primary_ai = ai_tiers[0]["client"] if len(ai_tiers) > 0 else None
-secondary_ai = ai_tiers[1]["client"] if len(ai_tiers) > 1 else None
-third_ai = ai_tiers[2]["client"] if len(ai_tiers) > 2 else GeminiClient(API_KEY)
-
-# Initialize Image Assistant
+# Media Assistant Assignments
 imagen_assistant = safe_init("Imagen", lambda: ImagenClient(os.getenv("IMAGEN_API_KEY"), os.getenv("IMAGEN_MODEL"))) if os.getenv("IMAGEN_API_KEY") else None
-
-# Initialize Stability Assistant
 stability_assistant = safe_init("Stability", lambda: StabilityClient(os.getenv("STABILITY_API_KEY"), os.getenv("STABILITY_MODEL"))) if os.getenv("STABILITY_API_KEY") else None
-
-# Initialize Kling AI Assistants
 kling_assistant = safe_init("Kling Primary", lambda: KlingClient(os.getenv("KLING_ACCESS_KEY"), os.getenv("KLING_SECRET_KEY"))) if os.getenv("KLING_ACCESS_KEY") else None
 kling_assistant_2 = safe_init("Kling Tier 2", lambda: KlingClient(os.getenv("KLING_ACCESS_KEY_2"), os.getenv("KLING_SECRET_KEY_2"))) if os.getenv("KLING_ACCESS_KEY_2") else None
 kling_assistant_3 = safe_init("Kling Tier 3", lambda: KlingClient(os.getenv("KLING_ACCESS_KEY_3"), os.getenv("KLING_SECRET_KEY_3"))) if os.getenv("KLING_ACCESS_KEY_3") else None
 kling_assistant_4 = safe_init("Kling Tier 4", lambda: KlingClient(os.getenv("KLING_ACCESS_KEY_4"), os.getenv("KLING_SECRET_KEY_4"))) if os.getenv("KLING_ACCESS_KEY_4") else None
-
-# Initialize GitHub Assistant
-github_assistant = safe_init("GitHub Assistant", lambda: GitHubClient(os.getenv("GITHUB_ACCESS_TOKEN"))) if os.getenv("GITHUB_ACCESS_TOKEN") else None
-
-# Initialize Replicate Assistants
+github_video_assistant = safe_init("GitHub Video", lambda: GitHubClient(os.getenv("GITHUB_ACCESS_TOKEN"))) if os.getenv("GITHUB_ACCESS_TOKEN") else None
 replicate_assistant = safe_init("Replicate Primary", lambda: ReplicateClient(os.getenv("REPLICATE_API_TOKEN"), os.getenv("REPLICATE_MODEL") or "minimax/video-01")) if os.getenv("REPLICATE_API_TOKEN") else None
 replicate_assistant_2 = safe_init("Replicate Tier 2", lambda: ReplicateClient(os.getenv("REPLICATE_API_TOKEN_2"), os.getenv("REPLICATE_MODEL") or "minimax/video-01")) if os.getenv("REPLICATE_API_TOKEN_2") else None
 replicate_assistant_3 = safe_init("Replicate Tier 3", lambda: ReplicateClient(os.getenv("REPLICATE_API_TOKEN_3"), os.getenv("REPLICATE_MODEL") or "minimax/video-01")) if os.getenv("REPLICATE_API_TOKEN_3") else None
 replicate_assistant_4 = safe_init("Replicate Tier 4", lambda: ReplicateClient(os.getenv("REPLICATE_API_TOKEN_4"), os.getenv("REPLICATE_MODEL") or "minimax/video-01")) if os.getenv("REPLICATE_API_TOKEN_4") else None
-
-# Initialize Runway Assistant
 runway_assistant = safe_init("Runway", lambda: RunwayClient(os.getenv("RUNWAYML_API_KEY"))) if os.getenv("RUNWAYML_API_KEY") else None
-
-# Initialize Veo Assistants
 veo_assistant = safe_init("Veo Tier 1", lambda: VeoClient(os.getenv("VEO_API_KEY"), os.getenv("VEO_MODEL") or "veo3")) if os.getenv("VEO_API_KEY") else None
 veo_assistant_2 = safe_init("Veo Tier 2", lambda: VeoClient(os.getenv("VEO_API_KEY_2"), os.getenv("VEO_MODEL") or "veo3")) if os.getenv("VEO_API_KEY_2") else None
 veo_assistant_3 = safe_init("Veo Tier 3", lambda: VeoClient(os.getenv("VEO_API_KEY_3"), os.getenv("VEO_MODEL") or "veo3")) if os.getenv("VEO_API_KEY_3") else None
 veo_assistant_4 = safe_init("Veo Tier 4", lambda: VeoClient(os.getenv("VEO_API_KEY_4"), os.getenv("VEO_MODEL") or "veo3")) if os.getenv("VEO_API_KEY_4") else None
-
-# Initialize Freepik Assistants
 freepik_assistant = safe_init("Freepik Tier 1", lambda: FreepikClient(os.getenv("FREEPIK_API_KEY"))) if os.getenv("FREEPIK_API_KEY") else None
 freepik_assistant_2 = safe_init("Freepik Tier 2", lambda: FreepikClient(os.getenv("FREEPIK_API_KEY_2"))) if os.getenv("FREEPIK_API_KEY_2") else None
 freepik_assistant_3 = safe_init("Freepik Tier 3", lambda: FreepikClient(os.getenv("FREEPIK_API_KEY_3"))) if os.getenv("FREEPIK_API_KEY_3") else None
 freepik_assistant_4 = safe_init("Freepik Tier 4", lambda: FreepikClient(os.getenv("FREEPIK_API_KEY_4"))) if os.getenv("FREEPIK_API_KEY_4") else None
-
-# Initialize Hugging Face Assistant
 huggingface_assistant = safe_init("HuggingFace", lambda: HuggingFaceClient(os.getenv("HUGGINGFACE_API_KEY"))) if os.getenv("HUGGINGFACE_API_KEY") else None
-
-# Initialize GitHub Models Client (Tier 8)
-GITHUB_ACCESS_TOKEN = os.getenv("GITHUB_ACCESS_TOKEN")
-github_assistant = None
-
-if GITHUB_ACCESS_TOKEN:
-    try:
-        github_assistant = GitHubClient(GITHUB_ACCESS_TOKEN)
-        logger.info("[OK] GitHub Models enabled (Video Tier 8)")
-    except Exception as e:
-        logger.error(f"[FAIL] GitHub Models initialization failed: {e}")
-
-# Initialize Replicate Assistant (Primary Video)
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
-REPLICATE_MODEL = os.getenv("REPLICATE_MODEL") or "minimax/video-01"
-replicate_assistant = None
-
-if REPLICATE_API_TOKEN:
-    try:
-        replicate_assistant = ReplicateClient(REPLICATE_API_TOKEN, REPLICATE_MODEL)
-        logger.info(f"[OK] Replicate Video enabled (Primary: {REPLICATE_MODEL})")
-    except Exception as e:
-        logger.error(f"[FAIL] Replicate initialization failed: {e}")
-
-# Initialize Replicate Assistant 2 (Secondary Video)
-REPLICATE_API_TOKEN_2 = os.getenv("REPLICATE_API_TOKEN_2")
-replicate_assistant_2 = None
-
-if REPLICATE_API_TOKEN_2:
-    try:
-        replicate_assistant_2 = ReplicateClient(REPLICATE_API_TOKEN_2, REPLICATE_MODEL)
-        logger.info(f"[OK] Replicate Video enabled (Secondary: {REPLICATE_MODEL})")
-    except Exception as e:
-        logger.error(f"[FAIL] Replicate 2 initialization failed: {e}")
-
-# Initialize Replicate Assistant 3 (Tertiary Video)
-REPLICATE_API_TOKEN_3 = os.getenv("REPLICATE_API_TOKEN_3")
-replicate_assistant_3 = None
-
-if REPLICATE_API_TOKEN_3:
-    try:
-        replicate_assistant_3 = ReplicateClient(REPLICATE_API_TOKEN_3, REPLICATE_MODEL)
-        logger.info(f"[OK] Replicate Video enabled (Tertiary: {REPLICATE_MODEL})")
-    except Exception as e:
-        logger.error(f"[FAIL] Replicate 3 initialization failed: {e}")
-
-# Initialize Replicate Assistant 4 (Quaternary Video)
-REPLICATE_API_TOKEN_4 = os.getenv("REPLICATE_API_TOKEN_4")
-replicate_assistant_4 = None
-
-if REPLICATE_API_TOKEN_4:
-    try:
-        replicate_assistant_4 = ReplicateClient(REPLICATE_API_TOKEN_4, REPLICATE_MODEL)
-        logger.info(f"[OK] Replicate Video enabled (Quaternary: {REPLICATE_MODEL})")
-    except Exception as e:
-        logger.error(f"[FAIL] Replicate 4 initialization failed: {e}")
-
-# Initialize Runway Assistant
-RUNWAYML_API_KEY = os.getenv("RUNWAYML_API_KEY")
-runway_assistant = None
-
-if RUNWAYML_API_KEY:
-    runway_assistant = RunwayClient(RUNWAYML_API_KEY)
-    logger.info("RunwayML Video AI enabled")
-
-# Initialize Veo Assistants (Sequential Video Fallback)
-VEO_API_KEY = os.getenv("VEO_API_KEY")
-VEO_API_KEY_2 = os.getenv("VEO_API_KEY_2")
-VEO_API_KEY_3 = os.getenv("VEO_API_KEY_3")
-VEO_API_KEY_4 = os.getenv("VEO_API_KEY_4")
-VEO_MODEL = os.getenv("VEO_MODEL") or "veo3"
-veo_assistant = None
-veo_assistant_2 = None
-veo_assistant_3 = None
-veo_assistant_4 = None
-
-if VEO_API_KEY:
-    veo_assistant = VeoClient(VEO_API_KEY, VEO_MODEL)
-    logger.info(f"[OK] Veo Tier 1 enabled: {VEO_MODEL}")
-
-if VEO_API_KEY_2:
-    veo_assistant_2 = VeoClient(VEO_API_KEY_2, VEO_MODEL)
-    logger.info(f"[OK] Veo Tier 2 enabled: {VEO_MODEL}")
-
-if VEO_API_KEY_3:
-    veo_assistant_3 = VeoClient(VEO_API_KEY_3, VEO_MODEL)
-    logger.info(f"[OK] Veo Tier 3 enabled: {VEO_MODEL}")
-
-if VEO_API_KEY_4:
-    veo_assistant_4 = VeoClient(VEO_API_KEY_4, VEO_MODEL)
-    logger.info(f"[OK] Veo Tier 4 enabled: {VEO_MODEL}")
-
-# Initialize Freepik Assistants (Sequential Image Fallback)
-FREEPIK_API_KEY = os.getenv("FREEPIK_API_KEY")
-FREEPIK_API_KEY_2 = os.getenv("FREEPIK_API_KEY_2")
-FREEPIK_API_KEY_3 = os.getenv("FREEPIK_API_KEY_3")
-FREEPIK_API_KEY_4 = os.getenv("FREEPIK_API_KEY_4")
-freepik_assistant = None
-freepik_assistant_2 = None
-freepik_assistant_3 = None
-freepik_assistant_4 = None
-
-if FREEPIK_API_KEY:
-    freepik_assistant = FreepikClient(FREEPIK_API_KEY)
-    logger.info("[OK] Freepik Tier 1 enabled")
-
-if FREEPIK_API_KEY_2:
-    freepik_assistant_2 = FreepikClient(FREEPIK_API_KEY_2)
-    logger.info("[OK] Freepik Tier 2 enabled")
-
-if FREEPIK_API_KEY_3:
-    freepik_assistant_3 = FreepikClient(FREEPIK_API_KEY_3)
-    logger.info("[OK] Freepik Tier 3 enabled")
-
-if FREEPIK_API_KEY_4:
-    freepik_assistant_4 = FreepikClient(FREEPIK_API_KEY_4)
-    logger.info("[OK] Freepik Tier 4 enabled")
-
-# Initialize Hugging Face Assistant
-HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
-huggingface_assistant = None
-
-if HUGGINGFACE_API_KEY:
-    huggingface_assistant = HuggingFaceClient(HUGGINGFACE_API_KEY)
-    logger.info("Hugging Face Image AI enabled")
 
 @app.route('/health')
 def health():
